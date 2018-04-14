@@ -1,0 +1,9 @@
+class Class2
+{
+	int count;
+	boolean status;
+	void main()
+	{
+		count = count + 1;
+	}
+}

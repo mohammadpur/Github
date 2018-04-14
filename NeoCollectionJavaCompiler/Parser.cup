@@ -1,0 +1,91 @@
+import java.io.File;
+import java.util.ArrayList;
+action code {:
+	ArrayList<String> declarationList = new ArrayList<String>();
+	ArrayList<String> methodList = new ArrayList<String>();
+:};
+
+terminal SEMI,COMMA,DOT,LBRACK,RBRACK,INT,VOID,BOOLEAN,LPAREN,RPAREN,LBRACE,RBRACE,WHILE,RETURN,EQ,ADDTO,OPERATION;
+terminal OR,AND,NOT,LTEQ,LT,GT,GTEQ,EQEQ,NOTEQ,PLUS,MINUS,UMINUS,TIMES,DIV,MOD,TRUE,FALSE,CLASS,PUBLIC,PRIVATE,THIS,STATIC,NEW;
+terminal String ID;
+terminal Integer NUM;
+
+non terminal String Program,ClassDeclaration,Declaration,FieldDeclaration,MethodDeclaration,Declarators,Type,PrimType,ArrType,ParameterList;
+non terminal String ArgumentList,Reference,Statement,Expression,Binop;
+
+precedence left PLUS,MINUS;
+precedence left TIMES,DIV,MOD;
+
+Program ::= Program:e1 ClassDeclaration:e2 {: System.out.println(e1 + e2); :}
+				| {: RESULT = new String(""); :}
+				;
+ClassDeclaration ::= CLASS ID:e1 LBRACE Declaration:e2 RBRACE {: RESULT = new String("class " + e1 + "\n{\n" + e2 + "\n}"); :}
+				| CLASS ID:e1 ADDTO ID:e2 LBRACE Declaration:e3 RBRACE
+				{: RESULT = new String("class " + e1 + " addto " + e2 + "\n{\n" + e3 + "\n}"); Adder.addToFile(declarationList,methodList,new File(String.format("%s.mjava",e2))); :}
+				;
+Declaration ::= Declaration:e1 FieldDeclaration:e2 {: RESULT = new String(e1 + e2); :}
+				| Declaration:e1 MethodDeclaration:e2 {: RESULT = new String(e1 + e2); :}
+				| {: RESULT = new String(""); :}
+				;
+FieldDeclaration ::= Declarators:e1 ID:e2 SEMI {: RESULT = new String(e1 + " " + e2 + ";\n"); declarationList.add(RESULT); :} ;
+MethodDeclaration ::= Declarators:e1 ID:e2 LPAREN ParameterList:e3 RPAREN LBRACE Statement:e4 RETURN Expression:e5 SEMI RBRACE 
+					{: RESULT = new String(e1 + e2 + "(" + e3 + ")\n" + "{\n" + e4 + "return " + e5 + ";\n}"); if(e1.contains("operation")) methodList.add(RESULT); :}
+					| Declarators:e1 ID:e2 LPAREN ParameterList:e3 RPAREN LBRACE Statement:e4 RBRACE
+					{: RESULT = new String(e1 + e2 + "(" + e3 + ")" + "{\n" + e4 + "\n}"); if(e1.contains("operation")) methodList.add(RESULT); :}
+					;
+Declarators ::= PUBLIC STATIC Type:e1 {: RESULT = new String("public static " + e1); :}
+				| PUBLIC Type:e1 {: RESULT = new String("public " + e1); :}
+				| PRIVATE STATIC Type:e1 {: RESULT = new String("private static " + e1); :}
+				| PRIVATE Type:e1 {: RESULT = new String("private " + e1); :}
+				| STATIC Type:e1 {: RESULT = new String("static " + e1); :}
+				| Type:e1 {: RESULT = new String(e1); :}
+				| OPERATION Declarators:e1 {: RESULT = new String("operation " + e1); :}
+				;
+Type ::= PrimType:e1 {: RESULT = new String(e1); :} 
+				| ArrType:e1 {: RESULT = new String(e1); :}
+				;
+PrimType ::= INT {: RESULT = new String("int "); :} 
+				| BOOLEAN {: RESULT = new String("boolean "); :}
+				| VOID {: RESULT = new String("void "); :}
+				;
+ArrType ::= INT LBRACK RBRACK {: RESULT = new String("int[]"); :}
+			| ID:e1 LBRACK RBRACK {: RESULT = new String(e1 + "[]"); :}
+			;
+ParameterList ::= Type:e1 ID:e2 {: RESULT = new String(e1 + " " + e2); :}
+				| Type:e1 ID:e2 COMMA ParameterList:e3 {: RESULT = new String(e1 + " " + e2 + " , " + e3); :}
+				| {: RESULT = new String(""); :}
+				;
+ArgumentList ::= Expression:e1 {: RESULT = new String(e1); :}
+				| Expression:e1 COMMA ArgumentList:e2 {: RESULT = new String(e1 + " , " + e2); :}
+				;
+Reference ::= THIS {: RESULT = new String("this"); :}
+				| Reference:e1 DOT ID:e2 {: RESULT = new String(e1 + "." + e2); :}
+				| ID:e1 {: RESULT = new String(e1); :} %prec DIV
+				;
+Statement ::= LBRACE Statement:e1 RBRACE {: RESULT = new String("{\n" + e1 + "\n}\n"); :}
+				| Type:e1 ID:e2 EQ Expression:e3 SEMI {: RESULT = new String(e1 + " " + e2 + " = " + e3 + ";\n"); :}
+				| Reference:e1 EQ Expression:e2 SEMI {: RESULT = new String(e1 + " = " + e2 + ";\n"); :}
+				| Reference:e1 LBRACK Expression:e2 RBRACK EQ Expression:e3 SEMI {: RESULT = new String(e1 + "[" + e2 + "]" + " = " + e3 + ";\n"); :}
+				| Reference:e1 LPAREN ArgumentList:e2 RPAREN SEMI {: RESULT = new String(e1 + "(" + e2 + ");\n"); :}
+				| WHILE LPAREN Expression:e1 RPAREN Statement:e2 {: RESULT = new String("while(" + e1 + ")\n" + e2); :}
+				| {: RESULT = new String(""); :}
+				;
+Expression ::= Reference:e1 LBRACK:e2 Expression:e3 RBRACK:e4 {: RESULT = new String(e1 + "[" + e3 + "]"); :}
+				| Reference:e1 {: RESULT = new String(e1); :}
+				| Reference:e1 LPAREN:e2 ArgumentList:e3 RPAREN:e4 {: RESULT = new String(e1 + "(" + e3 + ")"); :}
+				| Expression:e1 Binop:e2 Expression:e3 {: RESULT = new String(e1 + e2 + e3); :}
+				| LPAREN Expression:e1 RPAREN {: RESULT = new String("(" + e1 + ")"); :}
+				| NUM:e1 {: RESULT = new String(e1.toString()); :}
+				| TRUE {: RESULT = new String("true"); :}
+				| FALSE {: RESULT = new String("false"); :}
+				| NEW ID:e1 LPAREN RPAREN {: RESULT = new String("new " + e1 + "()"); :}
+				| NEW INT LBRACK Expression:e1 RBRACK {: RESULT = new String("new int[" + e1 + "]"); :}
+				| NEW ID:e1 LBRACK Expression:e2 RBRACK {: RESULT = new String("new " + e1 + "[" + e2 + "]"); :}
+				| {: RESULT = new String(""); :}
+				;
+Binop ::= PLUS {: RESULT = new String(" + "); :}
+				| MINUS {: RESULT = new String(" - "); :}
+				| TIMES {: RESULT = new String(" * "); :}
+				| DIV {: RESULT = new String(" / "); :}
+				| MOD {: RESULT = new String(" % "); :}
+				;

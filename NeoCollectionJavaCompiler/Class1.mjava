@@ -1,0 +1,14 @@
+class Class1 addto Class2
+{
+	String[] temp;
+	
+	operation public void func1()
+	{
+		temp = new String[10];
+	}
+	
+	public void func2()
+	{
+		temp = new String[1000];
+	}
+}
